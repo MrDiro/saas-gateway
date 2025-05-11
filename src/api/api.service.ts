@@ -1,9 +1,8 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { AxiosError, AxiosRequestConfig } from "axios";
+import { AxiosError, AxiosResponse } from "axios";
 import { ConfigService } from "@nestjs/config";
 import { HttpService } from "@nestjs/axios";
 import { Request, Response } from "express";
-import { lastValueFrom } from "rxjs";
 
 @Injectable()
 export class ApiService {
@@ -12,41 +11,61 @@ export class ApiService {
         private readonly httpService: HttpService
     ) {}
 
-    public async proxy(req: Request, res: Response) {
-        try {
-            const url = req.originalUrl.substring(4);
+    public getRequest(req: Request, res: Response) {
+        const request = this.httpService.get(req.originalUrl.substring(4), {
+            baseURL: this.configService.get<string>("BASE_URL"),
+            params: req.params,
+            responseType: "arraybuffer",
+            headers: {
+                "Accept": req.headers["accept"],
+                "User-Agent": req.headers["user-agent"],
+            }
+        });
 
-            const config: AxiosRequestConfig = {
-                baseURL: this.configService.get<string>("BASE_URL"),
-                url: url,
-                method: req.method,
-                data: req.body,
-                params: req.query,
-                headers: this.sanitizeHeaders(req.headers),
-                responseType: 'arraybuffer'
-            };
-
-            const response = await lastValueFrom(this.httpService.request(config));
-            const buffer = Buffer.from(response.data);
-            
-            const content_type = response.headers["content-type"] || "application/octet-stream";
-            const content_length = buffer.length.toString();
-
-            res.setHeader("content-type", content_type);
-            res.setHeader("content-length", content_length);
-            res.status(response.status).send(buffer);
-        }
-        catch (error) {
-            this.handleErros(error, res);
-        }
+        request.subscribe({
+            next: (response) => {
+                this.handleResponse(response, res);
+            }, 
+            error: (err) => {
+                this.handleErros(err, res);
+            }
+        });
     }
 
-    private sanitizeHeaders(headers: Record<string, any>): Record<string, any> {
-        const { ...safeHeaders } = headers;
-        return safeHeaders;
+    public postRequest(req: Request, res: Response) {
+        const request = this.httpService.post(req.originalUrl.substring(4), req.body, {
+            baseURL: this.configService.get<string>("BASE_URL"),
+            params: req.params,
+            responseType: "arraybuffer",
+            headers: {
+                "Accept": req.headers["accept"],
+                "User-Agent": req.headers["user-agent"],
+                "Content-Type": req.headers["content-type"],
+                "Content-Encoding": req.headers["content-encoding"]
+            }
+        });
+
+        request.subscribe({
+            next: (response) => {
+                this.handleResponse(response, res);
+            },
+            error: (err) => {
+                this.handleErros(err, res);
+            }
+        });
     }
 
-    private handleErros(error:any, res: Response) {        
+    private handleResponse(axiosResponse: AxiosResponse, res: Response) {
+        const buffer = Buffer.from(axiosResponse.data);
+        const content_type = axiosResponse.headers["content-type"] || "application/octet-stream";
+        const content_length = buffer.length.toString();
+
+        res.setHeader("content-type", content_type);
+        res.setHeader("content-length", content_length);
+        res.status(axiosResponse.status).send(buffer);
+    }
+
+    private handleErros(error:any, res: Response) {
         if (error instanceof AxiosError) {
             const response = error.response;
 

@@ -1,4 +1,4 @@
-import {  All, Controller, Req, Res } from "@nestjs/common";
+import { Controller, Get, Post, Req, Res } from "@nestjs/common";
 import { ApiService } from "@gateway/api/api.service";
 import { Request, Response } from "express";
 
@@ -6,8 +6,13 @@ import { Request, Response } from "express";
 export class ApiController {
     constructor(private readonly apiService: ApiService) {}
 
-    @All(["", "/*path"])
-    public async proxy(@Req() request: Request, @Res() response: Response) {
-        this.apiService.proxy(request, response);
+    @Get("/*path")
+    public getRequest(@Req() request: Request, @Res() response: Response) {
+        this.apiService.getRequest(request, response);
+    }
+
+    @Post("/*path")
+    public postRequest(@Req() request: Request, @Res() response: Response) {
+        this.apiService.postRequest(request, response);
     }
 }
