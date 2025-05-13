@@ -9,7 +9,7 @@ import * as morgan from 'morgan';
 import helmet from 'helmet';
 
 async function bootstrap() {
-    const corsOrigin = process.env.NODE_CORS_ORIGIN || '*';
+    const logger = new Logger();
     const isProd = process.env.NODE_ENV === 'production';
     const port = process.env.NODE_PORT || 3001;
 
@@ -18,9 +18,13 @@ async function bootstrap() {
         autoFlushLogs: true,
         bufferLogs: true,
         cors: {
-            origin: corsOrigin,
-            methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"],
-            allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+            origin: "*",
+            methods: [
+                "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"
+            ],
+            allowedHeaders: [
+                "Content-Type", "Authorization", "X-Requested-With"
+            ],
             credentials: true,
         }
     });
@@ -52,8 +56,6 @@ async function bootstrap() {
     }
 
     await app.listen(port, () => {
-        const logger = new Logger();
-
         logger.log(`Is running on http://localhost:${port}/api 🚀`, "Api");
         logger.log(`Is running on http://localhost:${port}/api/document 🚀`, "Swagger");
     });
