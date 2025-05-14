@@ -66,6 +66,8 @@ export class ApiService {
     }
 
     private handleErros(error:any, res: Response) {
+        console.error(error);
+        
         if (error instanceof AxiosError) {
             const response = error.response;
 
