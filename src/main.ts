@@ -11,7 +11,7 @@ import helmet from 'helmet';
 async function bootstrap() {
     const logger = new Logger();
     const isProd = process.env.NODE_ENV === 'production';
-    const port = process.env.NODE_PORT || 3001;
+    const port = process.env.NODE_PORT!;
 
     const app = await NestFactory.create<NestExpressApplication>(AppModule, {
         abortOnError: false,
